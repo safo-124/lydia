@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Defines the Prisma Client generator. It specifies that the client should be
+// generated for JavaScript/TypeScript environments.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Specifies the database connection.
+// 'provider' is set to PostgreSQL.
+// 'url' is loaded from the DATABASE_URL environment variable in your .env file.
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------
+// --- Application-Specific Models        ---
+// ------------------------------------------
+
+// Represents a single item available on the restaurant's menu.
+model MenuItem {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  name        String
+  description String
+  price       Float
+  imageUrl    String?
+  category    String
+}
+
+// Represents a customer's order.
+model Order {
+  id           Int         @id @default(autoincrement())
+  createdAt    DateTime    @default(now())
+  totalPrice   Float
+  status       OrderStatus @default(PENDING)
+  items        Json        // Stores the list of ordered items as a JSON object.
+  customerName String      // For guest checkout, capturing the name provided at checkout.
+
+  // Optional relation to the User model for logged-in users.
+  // This allows tracking orders for registered customers.
+  // `onDelete: SetNull` means if a user is deleted, their orders are not deleted,
+  // but the `userId` field is set to null.
+  userId       String?
+  user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// Defines the possible statuses for an order.
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+// ------------------------------------------
+// --- Auth.js Models                     ---
+// ------------------------------------------
+// These models are required for the @auth/prisma-adapter to work correctly.
+
+// Used for social logins (e.g., Google, GitHub). Links a user's account
+// in our system to their account on an external provider.
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+// Stores user session information.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// The core user model. Can be extended with more app-specific fields if needed.
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  orders        Order[]   // A user can have many orders
+}
+
+// Used for "magic link" email sign-ins.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
