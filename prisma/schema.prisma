@@ -1,15 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your complete Prisma schema file for the entire project.
+// It defines the database structure for both the storefront and dashboard applications.
 
-// Defines the Prisma Client generator. It specifies that the client should be
-// generated for JavaScript/TypeScript environments.
 generator client {
   provider = "prisma-client-js"
 }
 
-// Specifies the database connection.
-// 'provider' is set to PostgreSQL.
-// 'url' is loaded from the DATABASE_URL environment variable in your .env file.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -30,24 +25,42 @@ model MenuItem {
   category    String
 }
 
-// Represents a customer's order.
+// Represents a customer's food order.
 model Order {
   id           Int         @id @default(autoincrement())
   createdAt    DateTime    @default(now())
   totalPrice   Float
   status       OrderStatus @default(PENDING)
-  items        Json        // Stores the list of ordered items as a JSON object.
-  customerName String      // For guest checkout, capturing the name provided at checkout.
+  items        Json
+  customerName String
 
   // Optional relation to the User model for logged-in users.
-  // This allows tracking orders for registered customers.
-  // `onDelete: SetNull` means if a user is deleted, their orders are not deleted,
-  // but the `userId` field is set to null.
   userId       String?
   user         User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
-// Defines the possible statuses for an order.
+// Represents a customer's table reservation request.
+model Reservation {
+  id              Int               @id @default(autoincrement())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  customerName    String
+  email           String
+  phone           String
+  reservationDate DateTime
+  partySize       Int
+  notes           String?
+  status          ReservationStatus @default(PENDING)
+
+  // Optional relation to the User model for logged-in users.
+  userId          String?
+  user            User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+// ------------------------------------------
+// --- Enums for Status Fields            ---
+// ------------------------------------------
+
 enum OrderStatus {
   PENDING
   ACCEPTED
@@ -56,13 +69,17 @@ enum OrderStatus {
   CANCELLED
 }
 
-// ------------------------------------------
-// --- Auth.js Models                     ---
-// ------------------------------------------
-// These models are required for the @auth/prisma-adapter to work correctly.
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
 
-// Used for social logins (e.g., Google, GitHub). Links a user's account
-// in our system to their account on an external provider.
+// ------------------------------------------
+// --- Auth.js Models (for User Auth)     ---
+// ------------------------------------------
+
 model Account {
   id                 String  @id @default(cuid())
   userId             String
@@ -76,13 +93,11 @@ model Account {
   scope              String?
   id_token           String?  @db.Text
   session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
-// Stores user session information.
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
@@ -91,7 +106,6 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// The core user model. Can be extended with more app-specific fields if needed.
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -100,10 +114,10 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
-  orders        Order[]   // A user can have many orders
+  orders        Order[]
+  reservations  Reservation[] // Relation to the new Reservation model
 }
 
-// Used for "magic link" email sign-ins.
 model VerificationToken {
   identifier String
   token      String   @unique

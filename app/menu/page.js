@@ -1,5 +1,5 @@
 // File: apps/storefront/app/menu/page.js
-// An enhanced menu page with search and category filtering for better user experience.
+// An enhanced menu page with search, category filtering, and add-to-cart notifications.
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 import { Search } from 'lucide-react';
+import { toast } from 'sonner'; // Import the toast function
 
 const CartIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -57,6 +58,11 @@ export default function MenuPage() {
         item.description.toLowerCase().includes(searchQuery.toLowerCase())
       );
   }, [menuItems, activeCategory, searchQuery]);
+  
+  const handleAddToCart = (item) => {
+    addToCart(item);
+    toast.success(`${item.name} has been added to your cart!`);
+  };
 
   if (isLoading) return <div className="text-center py-20"><h2 className="text-2xl font-semibold text-gray-700">Loading our delicious menu...</h2></div>;
   if (error) return <div className="text-center py-20 bg-red-50 rounded-lg max-w-2xl mx-auto"><h2 className="text-2xl font-semibold text-red-700">Oops!</h2><p className="text-red-600 mt-2">{error}</p></div>;
@@ -109,7 +115,7 @@ export default function MenuPage() {
                   <p className="text-gray-600 mt-2 flex-grow">{item.description}</p>
                   <div className="mt-4 flex justify-between items-center">
                     <p className="text-2xl font-bold text-green-600">GH₵{parseFloat(item.price).toFixed(2)}</p>
-                    <Button onClick={() => addToCart(item)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full">
+                    <Button onClick={() => handleAddToCart(item)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full">
                       <CartIcon /><span>Add</span>
                     </Button>
                   </div>
