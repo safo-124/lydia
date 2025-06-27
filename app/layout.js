@@ -25,14 +25,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-gray-50`} 
       >
         <Providers>
           <Toaster richColors position="top-center" />
           <Header/>
-         <main className="flex-grow">{children}</main>
-              <Footer />
-
+          <main className="flex-grow">
+            {children}
+          </main>
+          <Footer/>
         </Providers>
 
         
